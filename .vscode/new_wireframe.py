@@ -55,6 +55,8 @@ def new_screen(typed, name):
         stop("Type the requirement, e.g. 12 for R012, or 15-1 for the sub-requirement R015-S01.")
     code = tidy(typed)
     slug = re.sub(r"[^a-z0-9]+", "-", name.strip().lower()).strip("-")
+    if len(slug) > 30:  # kept short: Windows can't handle very long file locations
+        slug = slug[:31].rsplit("-", 1)[0]
     if not slug:
         stop("Give the screen a short name, e.g. version compare.")
     folder = folder_for(code)
