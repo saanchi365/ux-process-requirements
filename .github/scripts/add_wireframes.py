@@ -43,7 +43,8 @@ for owner, requirement in requirement_folders().items():
     if not pics.is_dir():
         continue
     have = {p.name for p in pics.glob("*.svg")}
-    pages = {p.stem: p for p in folder.rglob("*.md") if WIREFRAME.match(p.stem) and pics not in p.parents}
+    pages = {p.stem: p for p in folder.rglob("*.md")
+             if WIREFRAME.match(p.stem) and not p.stem.endswith("-compare") and pics not in p.parents}
     lost = {screen(c): p for c, p in pages.items() if picture_of(p) not in have}
 
     wrong = []
@@ -83,6 +84,32 @@ for owner, requirement in requirement_folders().items():
                 lines[1] = named
                 page.write_text("\n".join(lines), encoding="utf-8", newline="\n")
                 print(f"named {page.name}")
+
+    # a compare page in every versions folder: all versions of the screen side by side
+    for sub in [d for d in folder.iterdir() if d.is_dir() and d != pics]:
+        compare = sub / f"{sub.name}-compare.md"
+        versions = sorted((p for p in sub.glob("*.md") if p != compare and WIREFRAME.match(p.stem)),
+                          key=lambda p: WIREFRAME.match(p.stem).group(3))
+        if not versions:
+            if compare.exists():
+                compare.unlink()
+            continue
+        cells = []
+        for p in versions:
+            letter = WIREFRAME.match(p.stem).group(3)
+            status = ("✅ **Chosen**" if p.stem.endswith("-final") else
+                      "Not chosen" if p.stem.endswith("-cancel") else "Not decided yet")
+            cells.append((f"Version {letter}", status, picture_of(p), p.name))
+        text = (f"# {sub.name} · compare versions\n{trail(issues, owner) if owner in codes else owner}\n\n"
+                "Made automatically: every version of this screen side by side. Open a version for its notes.\n\n"
+                "<table>\n<tr>" + "".join(f"<th>{v}<br>{s}</th>" for v, s, _, _ in cells) + "</tr>\n<tr>"
+                + "".join(f'<td valign="top"><a href="{page}"><img src="../images/{pic}" width="360"></a></td>'
+                          for _, _, pic, page in cells) + "</tr>\n<tr>"
+                + "".join(f'<td><a href="{page}">{page.removesuffix(".md")}</a></td>' for _, _, _, page in cells)
+                + "</tr>\n</table>\n")
+        if not compare.exists() or compare.read_text(encoding="utf-8") != text:
+            compare.write_text(text, encoding="utf-8", newline="\n")
+            print(f"compare page {compare.name}")
 
     for sub in [d for d in folder.iterdir() if d.is_dir() and d != pics]:
         if not any(sub.iterdir()):
