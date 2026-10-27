@@ -2,8 +2,9 @@
 
 Run it from VS Code: Terminal > Run Task... > "New wireframe" or "New version of a screen".
 
-  new_wireframe.py new 12 "version compare"  ->  R012-W<next number>-version-compare
-  new_wireframe.py version R012-W02          ->  the next version (a, b, c ...) of that screen
+  new_wireframe.py new 12 "version compare"   ->  R012-W<next number>-version-compare
+  new_wireframe.py new 15-1 "reason box"      ->  R015-S01-W<next number>-reason-box (a sub-requirement)
+  new_wireframe.py version R012-W02           ->  the next version (a, b, c ...) of that screen
 """
 import os
 import re
@@ -13,9 +14,10 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / ".github" / "scripts"))
-from issues import code, folder_of  # noqa: E402
+from issues import requirement_folders, tidy  # noqa: E402
 
 LINK = re.compile(r"!\[[^\]]*\]\((?:\.\./)?images/[^)]+\)")
+TYPED = re.compile(r"\s*R?0*\d+(?:\s*[-./ ]\s*S?0*\d+)*\s*", re.I)  # 15, R015, 15-1, R015-S01 ...
 
 
 def stop(message):
@@ -23,11 +25,11 @@ def stop(message):
     sys.exit(1)
 
 
-def folder_for(n):
-    """The wireframes folder of requirement (or sub-requirement) n."""
-    folder = folder_of(n)
+def folder_for(code):
+    """The wireframes folder of a requirement or sub-requirement, e.g. R015-S01."""
+    folder = requirement_folders().get(code)
     if not folder:
-        stop(f"There is no folder for #{n} yet. Check the number, or click Sync Changes and try again.")
+        stop(f"There is no folder for {code} yet. Check the code, or click Sync Changes and try again.")
     (folder / "wireframes" / "images").mkdir(parents=True, exist_ok=True)
     return folder / "wireframes"
 
@@ -48,19 +50,17 @@ def open_files(*files):
         print("  Open them from the file list on the left.")
 
 
-def new_screen(number, name):
-    m = re.fullmatch(r"\s*(?:#|R)?0*(\d+)\s*", number, re.I)
-    if not m:
-        stop("Type the requirement's number, e.g. 12 (or #12, or R012).")
-    n = int(m.group(1))
+def new_screen(typed, name):
+    if not TYPED.fullmatch(typed):
+        stop("Type the requirement, e.g. 12 for R012, or 15-1 for the sub-requirement R015-S01.")
+    code = tidy(typed)
     slug = re.sub(r"[^a-z0-9]+", "-", name.strip().lower()).strip("-")
     if not slug:
         stop("Give the screen a short name, e.g. version compare.")
-    folder = folder_for(n)
+    folder = folder_for(code)
     images = folder / "images"
-    images.mkdir(exist_ok=True)
-    numbers = [int(w.group(1)) for p in images.glob("*.svg") if (w := re.match(code(n) + r"-W(\d+)", p.name))]
-    stem = f"{code(n)}-W{max(numbers, default=0) + 1:02d}-{slug}"
+    numbers = [int(w.group(1)) for p in images.glob("*.svg") if (w := re.match(re.escape(code) + r"-W(\d+)", p.name))]
+    stem = f"{code}-W{max(numbers, default=0) + 1:02d}-{slug}"
     pic = images / f"{stem}.excalidraw.svg"
     pic.write_text("", encoding="utf-8")
     page = folder / f"{stem}.md"
@@ -71,11 +71,12 @@ def new_screen(number, name):
 
 
 def new_version(screen):
-    m = re.fullmatch(r"\s*R0*(\d+)-W0*(\d+)\s*", screen, re.I)
+    m = re.fullmatch(r"\s*(R?\d+(?:\s*-\s*S?\d+)*)\s*-\s*W0*(\d+)\s*", screen, re.I)
     if not m:
-        stop("Type the screen like R012-W02, without a version letter.")
-    screen = f"{code(int(m.group(1)))}-W{int(m.group(2)):02d}"
-    folder = folder_for(int(m.group(1)))
+        stop("Type the screen like R012-W02 (or R015-S01-W02), without a version letter.")
+    code = tidy(m.group(1))
+    screen = f"{code}-W{int(m.group(2)):02d}"
+    folder = folder_for(code)
     images = folder / "images"
     pattern = re.compile(re.escape(screen) + r"([a-z]?)(?=[-.])(.*?)(?:\.excalidraw)?\.svg$")
 

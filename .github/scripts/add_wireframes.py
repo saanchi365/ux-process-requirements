@@ -12,15 +12,15 @@ names don't fit are listed in PICTURES-NOT-ADDED.md in that folder, which disapp
 """
 import re
 
-from issues import REQUIREMENTS, WIREFRAME, all_issues, code, requirement_folders, trail
+from issues import REQUIREMENTS, WIREFRAME, all_issues, by_code, requirement_folders, trail
 
 LINK = re.compile(r"!\[[^\]]*\]\((?:\.\./)?images/([^)]+)\)")
 
 
 def screen(name, version=True):
-    """R012-W02b-version-compare-final -> R012-W02b (or R012-W02 without the version letter)."""
+    """R015-S01-W02b-reason-box-final -> R015-S01-W02b (or R015-S01-W02 without the version letter)."""
     m = WIREFRAME.match(name)
-    return f"R{m.group(1)}-W{m.group(2)}" + (m.group(3) if version else "")
+    return f"{m.group(1)}-W{m.group(2)}" + (m.group(3) if version else "")
 
 
 def place(folder, name):
@@ -36,6 +36,7 @@ def picture_of(page):
 
 
 issues = all_issues() if REQUIREMENTS.is_dir() else {}
+codes = by_code(issues)
 for owner, requirement in requirement_folders().items():
     folder = requirement / "wireframes"
     pics = folder / "images"
@@ -49,8 +50,7 @@ for owner, requirement in requirement_folders().items():
     for name in sorted(have):
         stem = name.removesuffix(".svg").removesuffix(".excalidraw")
         m = WIREFRAME.match(stem)
-        n = int(m.group(1)) if m else None
-        if not m or n != owner:
+        if not m or m.group(1) != owner:
             wrong.append(name)
             continue
         if stem in pages:
@@ -68,18 +68,17 @@ for owner, requirement in requirement_folders().items():
             print(f"renamed {old.name} -> {stem}.md")
         else:
             pages[stem] = where / f"{stem}.md"
-            pages[stem].write_text(f"# {stem}\n{code(n)}\n\n![{stem}]({prefix}{name})\n\n"
+            pages[stem].write_text(f"# {stem}\n{owner}\n\n![{stem}]({prefix}{name})\n\n"
                                    "## Description\n\n\n## Open questions\n- \n", encoding="utf-8", newline="\n")
             print(f"added {pages[stem].relative_to(REQUIREMENTS.parent)}")
 
-    # keep the line saying which requirement a page is for up to date (it starts as just the code, e.g. R016)
+    # keep the line saying which requirement a page is for up to date (it starts as just the code, e.g. R015-S01)
     for stem, page in pages.items():
         if not page.exists():
             continue
         lines = page.read_text(encoding="utf-8").split("\n")
-        n = int(WIREFRAME.match(stem).group(1))
-        if n in issues and len(lines) > 1 and re.fullmatch(r"R\d{3,}|#\d+ · .*", lines[1].strip()):
-            named = trail(issues, n)
+        if owner in codes and len(lines) > 1 and re.fullmatch(r"R\d{3,}(-S\d{2,})*( · .*)?", lines[1].strip()):
+            named = trail(issues, owner)
             if lines[1] != named:
                 lines[1] = named
                 page.write_text("\n".join(lines), encoding="utf-8", newline="\n")
@@ -92,7 +91,7 @@ for owner, requirement in requirement_folders().items():
     note = folder / "PICTURES-NOT-ADDED.md"
     if wrong:
         note.write_text("# Pictures not added\n\nTheir names don't fit this folder. Name them like "
-                        f"`{code(owner)}-W01-screen-name.excalidraw.svg` (a sub-requirement's pictures go in its own "
+                        f"`{owner}-W01-screen-name.excalidraw.svg` (a sub-requirement's pictures go in its own "
                         "folder) and their pages will be made.\n\n"
                         + "".join(f"- `images/{w}`\n" for w in wrong), encoding="utf-8", newline="\n")
     elif note.exists():
