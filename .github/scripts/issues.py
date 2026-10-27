@@ -51,7 +51,10 @@ def top(issues, n):
 
 
 def folder_name(issue):
-    slug = re.sub(r"[^a-z0-9]+", "-", issue["title"].lower()).strip("-")[:50].strip("-")
+    # kept short: Windows can't handle a file whose full location is longer than about 260 letters
+    slug = re.sub(r"[^a-z0-9]+", "-", issue["title"].lower()).strip("-")
+    if len(slug) > 30:
+        slug = slug[:31].rsplit("-", 1)[0]
     return f"{code(issue['n'])}-{slug}" if slug else code(issue["n"])
 
 
