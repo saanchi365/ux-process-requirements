@@ -55,6 +55,7 @@ def folder_name(issue):
     slug = re.sub(r"[^a-z0-9]+", "-", issue["title"].lower()).strip("-")
     if len(slug) > 30:
         slug = slug[:31].rsplit("-", 1)[0]
+        slug = re.sub(r"(-(a|an|the|of|for|with|to|and|by|on|in|from|through|each|both))+$", "", slug)
     return f"{code(issue['n'])}-{slug}" if slug else code(issue["n"])
 
 
