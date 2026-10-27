@@ -43,7 +43,7 @@ requirements/
 
 In VS Code: **Terminal → Run Task… → New wireframe**. Type the requirement (e.g. `12` for R012, or `15-1` for the sub-requirement R015-S01) and a short name (e.g. `version compare`). The wireframe number is worked out, and the picture and its page open side by side: draw, write the description and open questions, then **Commit** (it sends by itself).
 
-**A new version of a screen:** **Terminal → Run Task… → New version of a screen**, then type the screen (e.g. `R012-W02` or `R015-S01-W02`). It starts as a copy of the latest version.
+**A new version of a screen:** **Terminal → Run Task… → New version of a screen**, then type the screen (e.g. `R012-W02` or `R015-S01-W02`). It starts as a copy of the latest version. The versions go into a folder named after the screen, with a **compare page** (e.g. `R012-W02-compare.md`) that shows them all side by side and which one is chosen. It's made and kept up to date automatically.
 
 Renaming a picture (e.g. adding `-final` or `-cancel`) renames its page too. Wrongly named pictures are listed in `PICTURES-NOT-ADDED.md` in that folder.
 

@@ -97,7 +97,7 @@ for owner, requirement in requirement_folders().items():
         cells = []
         for p in versions:
             letter = WIREFRAME.match(p.stem).group(3)
-            status = ("✅ **Chosen**" if p.stem.endswith("-final") else
+            status = ("✅ <b>Chosen</b>" if p.stem.endswith("-final") else
                       "Not chosen" if p.stem.endswith("-cancel") else "Not decided yet")
             cells.append((f"Version {letter}", status, picture_of(p), p.name))
         text = (f"# {sub.name} · compare versions\n{trail(issues, owner) if owner in codes else owner}\n\n"
