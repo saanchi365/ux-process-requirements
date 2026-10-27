@@ -1,0 +1,40 @@
+# Keeps the requirements tidy and gives every wireframe picture its own page:
+# - a folder for every new requirement (sub-requirements use their parent's)
+# - the sub-requirement label on requirements that sit inside another one
+# - a page next to every new wireframe picture, kept named after its requirement
+name: Organise requirements and wireframes
+
+on:
+  issues:
+    types: [opened, edited, reopened, closed]
+  push:
+    branches: [main]
+    paths: ["requirements/**/images/**"]
+  schedule:
+    - cron: "17 * * * *"  # once an hour, to catch requirements moved inside another one later
+  workflow_dispatch:
+
+concurrency:
+  group: organise
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  organise:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: github.event.action == 'opened'
+        run: sleep 20  # "Create sub-issue" links the new issue to its parent a moment after creating it
+      - run: |
+          python .github/scripts/organise_issues.py
+          python .github/scripts/add_wireframes.py
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - run: |
+          git config user.name "requirements-helper"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A requirements
+          git diff --cached --quiet || { git commit -m "Organise requirements and wireframes"; git pull --rebase; git push; }
