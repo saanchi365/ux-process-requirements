@@ -1,0 +1,46 @@
+name: "Requirement"
+description: Something the product must do. For a sub-requirement, open its requirement and use Create sub-issue.
+labels: ["requirement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **In the title, type only the name**, e.g. "Contract version history". Its number (e.g. #12) is given by GitHub; wireframes use it as **R012**.
+        **A sub-requirement?** Open the requirement it belongs to, click **Create sub-issue** at the bottom, and pick this form.
+        Small points (e.g. "opens in Word", "clause library on the side") go in **Details** as bullets, not as more issues.
+  - type: textarea
+    attributes:
+      label: Requirement
+      description: What is needed, in plain words
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Given by
+      description: Who asked for it
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Where it came from
+      options: [Meeting, Email, Chat, Document, Other]
+  - type: textarea
+    attributes:
+      label: Done when
+      description: One per line, starting with "- "
+      value: |
+        -
+  - type: textarea
+    attributes:
+      label: Details
+      description: The small points, one per line, starting with "- "
+      value: |
+        -
+  - type: textarea
+    attributes:
+      label: Open questions
+      description: Optional. Questions that still need an answer, one per line starting with "- ".
+  - type: dropdown
+    attributes:
+      label: How sure are we?
+      options: [Confirmed — the person said it clearly, Not sure yet — needs checking]

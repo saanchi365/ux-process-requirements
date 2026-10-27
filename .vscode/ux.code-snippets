@@ -1,0 +1,21 @@
+{
+  "Flowchart page": {
+    "scope": "markdown",
+    "prefix": "flowchart",
+    "description": "A flowchart page: the chart, then Description and Open questions.",
+    "body": [
+      "# ${1:R012} \u00b7 ${2:Requirement name} \u203a ${3:Flowchart name}",
+      "",
+      "```mermaid",
+      "flowchart TD",
+      "    A([\"${4:Start}\"]) --> B[\"${5:Next step}\"]",
+      "```",
+      "",
+      "## Description",
+      "$6",
+      "",
+      "## Open questions",
+      "- $7"
+    ]
+  }
+}
