@@ -1,10 +1,10 @@
-"""Give every wireframe picture its own page, in its requirement's folder.
+"""Give every wireframe picture its own page, in its requirement's wireframes folder.
 
-A picture in requirements/R012-.../images/ named like R012-W02-version-compare.excalidraw.svg gets the page
-requirements/R012-.../R012-W02-version-compare.md: its name, which requirement it is for, the picture,
-then Description and Open questions. Versions of a screen (R012-W02a-..., R012-W02b-...) get their pages
-inside a folder named after the screen, R012-W02/. A sub-requirement's pictures go in its parent's folder,
-named with its own number (R016-W01-... inside R015-...).
+A picture in requirements/R012-.../wireframes/images/ named like R012-W02-version-compare.excalidraw.svg gets
+the page requirements/R012-.../wireframes/R012-W02-version-compare.md: its name, which requirement it is for,
+the picture, then Description and Open questions. Versions of a screen (R012-W02a-..., R012-W02b-...) get their
+pages inside a folder named after the screen, wireframes/R012-W02/. Sub-requirements work the same way in their
+own folder (inside their requirement's folder).
 
 Pages that already exist keep everything written in them; only the line saying which requirement they are
 for is kept up to date. If a picture is renamed (e.g. ...-final), its page is renamed with it. Pictures whose
@@ -12,7 +12,7 @@ names don't fit are listed in PICTURES-NOT-ADDED.md in that folder, which disapp
 """
 import re
 
-from issues import REQUIREMENTS, WIREFRAME, all_issues, code, top, trail
+from issues import REQUIREMENTS, WIREFRAME, all_issues, code, requirement_folders, trail
 
 LINK = re.compile(r"!\[[^\]]*\]\((?:\.\./)?images/([^)]+)\)")
 
@@ -36,12 +36,11 @@ def picture_of(page):
 
 
 issues = all_issues() if REQUIREMENTS.is_dir() else {}
-for folder in sorted(p for p in REQUIREMENTS.glob("R*") if p.is_dir()) if REQUIREMENTS.is_dir() else []:
-    owner = re.match(r"R(\d+)", folder.name)
+for owner, requirement in requirement_folders().items():
+    folder = requirement / "wireframes"
     pics = folder / "images"
-    if not owner or not pics.is_dir():
+    if not pics.is_dir():
         continue
-    owner = int(owner.group(1))
     have = {p.name for p in pics.glob("*.svg")}
     pages = {p.stem: p for p in folder.rglob("*.md") if WIREFRAME.match(p.stem) and pics not in p.parents}
     lost = {screen(c): p for c, p in pages.items() if picture_of(p) not in have}
@@ -51,7 +50,7 @@ for folder in sorted(p for p in REQUIREMENTS.glob("R*") if p.is_dir()) if REQUIR
         stem = name.removesuffix(".svg").removesuffix(".excalidraw")
         m = WIREFRAME.match(stem)
         n = int(m.group(1)) if m else None
-        if not m or (n != owner and top(issues, n) != owner):
+        if not m or n != owner:
             wrong.append(name)
             continue
         if stem in pages:
@@ -93,8 +92,8 @@ for folder in sorted(p for p in REQUIREMENTS.glob("R*") if p.is_dir()) if REQUIR
     note = folder / "PICTURES-NOT-ADDED.md"
     if wrong:
         note.write_text("# Pictures not added\n\nTheir names don't fit this folder. Name them like "
-                        f"`{code(owner)}-W01-screen-name.excalidraw.svg` (or with the number of one of its "
-                        "sub-requirements) and their pages will be made.\n\n"
+                        f"`{code(owner)}-W01-screen-name.excalidraw.svg` (a sub-requirement's pictures go in its own "
+                        "folder) and their pages will be made.\n\n"
                         + "".join(f"- `images/{w}`\n" for w in wrong), encoding="utf-8", newline="\n")
     elif note.exists():
         note.unlink()

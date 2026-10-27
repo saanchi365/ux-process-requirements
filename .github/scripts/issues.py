@@ -55,11 +55,21 @@ def folder_name(issue):
     return f"{code(issue['n'])}-{slug}" if slug else code(issue["n"])
 
 
+def requirement_folders():
+    """Every requirement and sub-requirement folder, at any depth: {number: folder}."""
+    found = {}
+    if REQUIREMENTS.is_dir():
+        for p in sorted(REQUIREMENTS.rglob("R*")):
+            m = re.match(r"R(\d{3,})(-|$)", p.name)
+            inside = p.relative_to(REQUIREMENTS).parts[:-1]
+            if p.is_dir() and m and not WIREFRAME.match(p.name) and not {"wireframes", "flowcharts"} & set(inside):
+                found.setdefault(int(m.group(1)), p)
+    return found
+
+
 def folder_of(n):
-    """The requirement's folder, whatever words follow its code."""
-    if not REQUIREMENTS.is_dir():
-        return None
-    return next((p for p in sorted(REQUIREMENTS.iterdir()) if p.is_dir() and re.match(code(n) + r"(-|$)", p.name)), None)
+    """The requirement's folder, wherever it is and whatever words follow its code."""
+    return requirement_folders().get(n)
 
 
 def trail(issues, n):

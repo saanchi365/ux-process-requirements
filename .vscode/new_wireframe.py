@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / ".github" / "scripts"))
-from issues import code, folder_of, top  # noqa: E402
+from issues import code, folder_of  # noqa: E402
 
 LINK = re.compile(r"!\[[^\]]*\]\((?:\.\./)?images/[^)]+\)")
 
@@ -24,19 +24,12 @@ def stop(message):
 
 
 def folder_for(n):
-    """The folder of requirement n, or of the requirement it sits inside if it's a sub-requirement."""
+    """The wireframes folder of requirement (or sub-requirement) n."""
     folder = folder_of(n)
-    if folder:
-        return folder
-    try:
-        from issues import all_issues
-        parent = top(all_issues(), n)
-    except Exception:
-        parent = n
-    folder = folder_of(parent)
     if not folder:
         stop(f"There is no folder for #{n} yet. Check the number, or click Sync Changes and try again.")
-    return folder
+    (folder / "wireframes" / "images").mkdir(parents=True, exist_ok=True)
+    return folder / "wireframes"
 
 
 def write_page(path, name, link):
@@ -72,7 +65,7 @@ def new_screen(number, name):
     pic.write_text("", encoding="utf-8")
     page = folder / f"{stem}.md"
     write_page(page, stem, f"images/{pic.name}")
-    print(f"\n  Made {stem} in {folder.name}\n"
+    print(f"\n  Made {stem} in {folder.parent.name}\n"
           "  Draw in the picture, write the description and open questions in its page, then Commit.\n")
     open_files(page, pic)
 
