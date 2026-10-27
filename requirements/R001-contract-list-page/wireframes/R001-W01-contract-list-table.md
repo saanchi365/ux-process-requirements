@@ -1,5 +1,5 @@
 # R001-W01-contract-list-table
-R001
+R001 · Contract list page
 
 ![R001-W01-contract-list-table](images/R001-W01-contract-list-table.excalidraw.svg)
 
