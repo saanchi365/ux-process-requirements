@@ -5,24 +5,59 @@
       "label": "New wireframe",
       "type": "process",
       "command": "python",
-      "args": ["${workspaceFolder}/.vscode/new_wireframe.py", "new", "${input:number}", "${input:name}"],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "shared", "clear": true, "focus": false },
+      "args": [
+        "${workspaceFolder}/.vscode/new_wireframe.py",
+        "new",
+        "${input:number}",
+        "${input:name}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true,
+        "focus": false
+      },
       "problemMatcher": []
     },
     {
       "label": "New version of a screen",
       "type": "process",
       "command": "python",
-      "args": ["${workspaceFolder}/.vscode/new_wireframe.py", "version", "${input:screen}"],
-      "options": { "cwd": "${workspaceFolder}" },
-      "presentation": { "reveal": "always", "panel": "shared", "clear": true, "focus": false },
+      "args": [
+        "${workspaceFolder}/.vscode/new_wireframe.py",
+        "version",
+        "${input:screen}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true,
+        "focus": false
+      },
       "problemMatcher": []
     }
   ],
   "inputs": [
-    { "id": "number", "type": "promptString", "description": "Which requirement is it for? Its number, e.g. 12" },
-    { "id": "name", "type": "promptString", "description": "Short name of the screen, e.g. version compare" },
-    { "id": "screen", "type": "promptString", "description": "Which screen gets a new version? e.g. R012-W02" }
+    {
+      "id": "number",
+      "type": "promptString",
+      "description": "Which requirement is it for? e.g. 12 for R012, or 15-1 for the sub-requirement R015-S01"
+    },
+    {
+      "id": "name",
+      "type": "promptString",
+      "description": "Short name of the screen, e.g. version compare"
+    },
+    {
+      "id": "screen",
+      "type": "promptString",
+      "description": "Which screen gets a new version? e.g. R012-W02, or R015-S01-W02"
+    }
   ]
 }

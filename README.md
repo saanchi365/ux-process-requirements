@@ -15,7 +15,7 @@ A demo project for our UX documentation process, starting the way real work does
 
 - **New requirement:** Issues → New issue → **Requirement**. Type only its name in the title.
 - **Sub-requirement:** open the requirement → **Create sub-issue** → **Requirement**.
-- Every requirement has its **number** from GitHub (e.g. #12). In file names it's written **R012**.
+- **Codes:** you type only the name; within a minute the code is added to the title. Requirements are **R001, R002 …** (counting only requirements; the next is the one after the highest ever used). Sub-requirements are counted inside their requirement: **R015-S01, R015-S02 …** A code never changes and is never reused. (GitHub's own issue numbers, like #27, also show on GitHub; we don't use them.)
 - Within a minute of creating a requirement, its folder appears, with `wireframes` and `flowcharts` inside:
 
 ```
@@ -23,7 +23,7 @@ requirements/
 └── R001-contract-list-page/
     ├── wireframes/
     ├── flowcharts/
-    └── R021-filters-on-the-contract-list/     ← a sub-requirement, inside its requirement
+    └── R001-S01-filters-on-the-contract-list/   ← a sub-requirement, inside its requirement
         ├── wireframes/
         └── flowcharts/
 ```
@@ -34,16 +34,16 @@ requirements/
 
 | Name | Means |
 |---|---|
-| `R012-W01-version-list` | Requirement #12, wireframe 1 |
+| `R012-W01-version-list` | Requirement R012, wireframe 1 |
 | `R012-W02a-…`, `R012-W02b-…` | Versions of wireframe 2 (their pages go in a folder `wireframes/R012-W02/`) |
-| `R021-W01-filter-panel` | Sub-requirement #21, wireframe 1, in its own folder |
-| `R012-C01-version-history-flow` | Requirement #12, flowchart 1 |
+| `R001-S01-W01-filter-panel` | Sub-requirement R001-S01, wireframe 1, in its own folder |
+| `R012-C01-version-history-flow` | Requirement R012, flowchart 1 |
 
 ## Adding a wireframe
 
-In VS Code: **Terminal → Run Task… → New wireframe**. Type the requirement's number (e.g. `12`) and a short name (e.g. `version compare`). The wireframe number is worked out, and the picture and its page open side by side: draw, write the description and open questions, then **Commit** (it sends by itself).
+In VS Code: **Terminal → Run Task… → New wireframe**. Type the requirement (e.g. `12` for R012, or `15-1` for the sub-requirement R015-S01) and a short name (e.g. `version compare`). The wireframe number is worked out, and the picture and its page open side by side: draw, write the description and open questions, then **Commit** (it sends by itself).
 
-**A new version of a screen:** **Terminal → Run Task… → New version of a screen**, then type the screen (e.g. `R012-W02`). It starts as a copy of the latest version.
+**A new version of a screen:** **Terminal → Run Task… → New version of a screen**, then type the screen (e.g. `R012-W02` or `R015-S01-W02`). It starts as a copy of the latest version.
 
 Renaming a picture (e.g. adding `-final` or `-cancel`) renames its page too. Wrongly named pictures are listed in `PICTURES-NOT-ADDED.md` in that folder.
 

@@ -5,8 +5,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        **In the title, type only the name**, e.g. "Contract version history". Its number (e.g. #12) is given by GitHub; wireframes use it as **R012**.
-        **A sub-requirement?** Open the requirement it belongs to, click **Create sub-issue** at the bottom, and pick this form.
+        **In the title, type only the name**, e.g. "Contract version history". Within a minute its code is added in front, e.g. **R021 · Contract version history**, and its folder is made.
+        **A sub-requirement?** Open the requirement it belongs to, click **Create sub-issue** at the bottom, and pick this form. It gets a code inside its requirement, e.g. **R015-S03**.
         Small points (e.g. "opens in Word", "clause library on the side") go in **Details** as bullets, not as more issues.
   - type: textarea
     attributes:
