@@ -1,0 +1,182 @@
+---
+// One requirement: Overview · Wireframes · Flowcharts · High-fidelity · Prototype, with its Comments on the right.
+// Comments live on the requirement's GitHub issue; a comment about a wireframe or flowchart starts with
+// "On wireframe R001-W01a" / "On flowchart R001-C01", so it shows next to that wireframe or flowchart here.
+import Layout from "../../layouts/Layout.astro";
+import { load, esc, screens, summary, day } from "../../lib/data.js";
+import { ICON, st, code, avatar, reqHref, fileHref } from "../../lib/ui.js";
+
+export async function getStaticPaths() {
+  const { all } = await load();
+  return all.map(r => ({ params: { code: r.code } }));
+}
+const { all } = await load();
+const r = all.find(x => x.code === Astro.params.code), p = r.parent;
+const family = [r, ...r.subs];
+const allWf = family.flatMap(x => x.wireframes), allFc = family.flatMap(x => x.flowcharts);
+const owner = Object.fromEntries(all.map(x => [x.code, x]));
+const nScreens = family.reduce((n, x) => n + screens(x.wireframes).length, 0);
+
+const aboutName = on => on.kind === "wireframe" ? `wireframe ${on.key}` : `flowchart ${on.key}`;
+const cmt = c => `<li class="${c.question ? "cq" : ""} ${c.question === "closed" ? "closed" : ""}" data-q="${c.question || ""}" ${c.on ? `data-on="${c.on.key}"` : ""}>${avatar(c.who)}<div style="min-width:0;flex:1">
+  <div class="row"><b style="font-size:var(--fs-sm)">${esc(c.who)}</b><span class="meta" data-ago="${c.when}"></span>
+    ${c.question ? `<span class="qtag ${c.question === "closed" ? "done" : ""}">${c.question === "closed" ? `${ICON.check}Closed question` : "Open question"}</span>` : ""}</div>
+  ${c.on ? `<a class="ctag" href="#${c.on.kind === "wireframe" ? "w" : "c"}=${c.on.key}">on ${aboutName(c.on)}</a>` : ""}
+  <div class="cmd">${c.html}</div>
+  <a class="tlink rep" href="${c.url}" target="_blank" rel="noopener">Reply on GitHub ↗</a></div></li>`;
+// the button that starts a comment: it copies the "On wireframe …" first line, then opens the GitHub issue's comment box
+const writeBtn = (x, about, label) => `<button class="btn primary" data-write="${x.url}#issuecomment-new" ${about ? `data-about="${esc(about)}"` : ""}>${ICON.cmt}${label}</button>`;
+const comments = x => x.comments;
+const allCmts = family.flatMap(comments);
+const nOpen = allCmts.filter(c => c.question === "open").length;
+
+const tabs = [["overview", "Overview", ""], ["wireframes", "Wireframes", nScreens], ["flowcharts", "Flowcharts", allFc.length], ["hifi", "High-fidelity", 0], ["prototype", "Prototype", "maybe"]];
+const sm = summary(r.subs);
+
+// a wireframe card: its picture, name, code and comment count
+const card = w => { const n = owner[w.req].comments.filter(c => c.on?.key === w.key).length;
+  return `<a class="wf" href="#w=${w.key}"><span class="pic">${w.image ? `<img src="${fileHref(w.image)}" alt="" loading="lazy">` : ""}</span>
+    <span class="cap"><b>${esc(w.name)}${w.version ? ` · version ${w.version}` : ""}</b><span class="code" style="justify-self:start">${w.key}</span>
+    <span class="row">${w.status === "final" ? '<span class="tag fin">Final</span>' : w.status === "cancel" ? '<span class="tag can">Not used</span>' : ""}${n ? `<span class="cbadge" style="margin-left:auto">${ICON.cmt}${n}</span>` : ""}</span></span></a>`; };
+---
+<Layout title={r.name} current={r.code}>
+  <div class="rq"><div class="rqmain">
+    <p class="crumb"><a href={`${import.meta.env.BASE_URL}requirements/`}>All requirements</a> ›{p && <Fragment> <a href={reqHref(p.code)}>{p.name} <span class="code">{p.code}</span></a> ›</Fragment>}</p>
+    <div class="rhead"><h1>{r.name}<span class="code">{r.code}</span></h1><Fragment set:html={st(r.st)} /></div>
+    <div class="tabs" role="tablist">
+      {tabs.map(([k, n, c]) => <a class="tab" role="tab" href={`#${k}`} data-tab={k} aria-selected={k === "overview" ? "true" : "false"}>{n}{c === "maybe" ? <span class="maybe">Maybe</span> : c !== "" && <span class="cc">{c}</span>}</a>)}
+    </div>
+
+    <section data-pane="overview" class="stack">
+      <section class="panel glance"><div class="gl">
+        <div><span>Status</span><Fragment set:html={st(r.st)} /></div>
+        <a href="#wireframes"><span>Wireframes</span>{nScreens ? <b>{nScreens}</b> : <b class="none">No wireframes yet</b>}</a>
+        <a href="#flowcharts"><span>Flowcharts</span>{allFc.length ? <b>{allFc.length}</b> : <b class="none">No flowcharts yet</b>}</a>
+        <div><span>Last changed</span><b data-ago={r.updated}></b></div>
+        <a href={r.url} target="_blank" rel="noopener"><span>On GitHub</span><b>Open issue ↗</b></a></div>
+        {r.subs.length > 0 && <div class="glsub"><div class="row" style="margin-bottom:var(--s-2)"><h3>Sub-requirements</h3><span class="meta">{sm.done} of {r.subs.length} completed</span></div>
+          <div class="pbar">{["done", "closed"].map(k => <i style={`width:${sm[k] / r.subs.length * 100}%;background:var(--${k})`}></i>)}</div>
+          <ul class="clean subl">{r.subs.map(s => <li><a class="subi" href={reqHref(s.code)}><Fragment set:html={code(s.code.slice(5))} /><span>{s.name}</span><Fragment set:html={st(s.st)} /></a></li>)}</ul></div>}
+        <p class="glby">Given by {r.givenBy}{r.source && ` · ${r.source.toLowerCase()}`} · added {day(r.created).toLowerCase()}</p></section>
+      <section class="panel"><h2>Description</h2>
+        <div class="brief cmd" set:html={r.what || "<p>No description yet.</p>"}></div>
+        {r.done.length > 0 && <Fragment><h3 class="dh">Done when</h3><ul class="bul">{r.done.map(d => <li>{d}</li>)}</ul></Fragment>}
+        {r.details.length > 0 && <Fragment><h3 class="dh">Details</h3><ul class="bul">{r.details.map(d => <li>{d}</li>)}</ul></Fragment>}
+        {r.questions.length > 0 && <Fragment><h3 class="dh">Questions written in the requirement</h3><ul class="bul">{r.questions.map(d => <li>{d}</li>)}</ul></Fragment>}
+        <p class="meta" style="margin:var(--s-3) 0 0">From the requirement's description on GitHub.</p></section>
+    </section>
+
+    <section data-pane="wireframes" hidden class="stack" style="gap:var(--s-5)">
+      {allWf.length ? family.filter(x => x.wireframes.length).map(x => <Fragment>
+        {x !== r && <h3 class="subhead">{x.name}<span class="code">{x.code}</span></h3>}
+        {screens(x.wireframes).map(s => <section><h3 class="sname">{s.name}<span class="code">{s.key}</span>{s.versions.length > 1 && <span class="meta">· {s.versions.length} versions</span>}</h3>
+          <div class="vrow" set:html={s.versions.map(card).join("")}></div></section>)}
+      </Fragment>) : <div class="empty"><b>No wireframes yet</b>They'll appear here once they're drawn.</div>}
+    </section>
+
+    <section data-pane="flowcharts" hidden class="stack">
+      {allFc.length ? <Fragment>
+        {allFc.length > 1 && <div class="toolbar" style="margin:0">{allFc.map((f, i) => <a class="chip" href={`#c=${f.key}`} data-fsel={f.key} aria-pressed={i === 0 ? "true" : "false"}>{f.name}</a>)}</div>}
+        {allFc.map((f, i) => <div data-fc={f.key} hidden={i > 0} class="stack">
+          <section class="panel fcmain"><div class="row" style="margin-bottom:var(--s-3)"><h2 style="margin:0">{f.name}</h2><span class="code">{f.key}</span><span style="flex:1"></span>
+            <Fragment set:html={writeBtn(owner[f.req], `On flowchart ${f.key}`, "Comment on this flowchart")} /></div>
+            {f.chart ? <pre class="mermaid">{f.chart}</pre> : <p class="meta">This flowchart has no chart yet.</p>}</section>
+          <section class="panel"><h2>Description</h2><div class="brief cmd" set:html={f.description || "<p>No description yet.</p>"}></div>
+            {f.questions.length > 0 && <Fragment><h3 class="dh">Questions written in the file</h3><ul class="bul">{f.questions.map(q => <li>{q}</li>)}</ul></Fragment>}
+            <a class="tlink" href={f.file} target="_blank" rel="noopener" style="display:inline-block;margin-top:var(--s-3)">Open the file on GitHub ↗</a></section>
+        </div>)}
+      </Fragment> : <div class="empty"><b>No flowcharts yet</b>Ask for one when this requirement needs it.</div>}
+    </section>
+
+    <section data-pane="hifi" hidden><div class="empty"><b>No high-fidelity screens yet</b>Finished screens from Figma or Claude will appear here.</div></section>
+    <section data-pane="prototype" hidden><div class="empty"><b>Prototype · not decided yet</b>If we go ahead, a clickable prototype from Figma or Claude for this requirement will open here.</div></section>
+  </div>
+
+  <aside class="cside single"><div class="chead"><h2>Comments <span class="cc">{allCmts.length}</span></h2>
+      {nOpen > 0 && <button class="tlink qonly" data-cfil>Show only open questions ({nOpen})</button>}</div>
+    <div class="cbody">
+      <div class="cwrite"><Fragment set:html={writeBtn(r, "", "Write a comment")} /><p class="meta">Opens this requirement on GitHub. To ask an open question, start your comment with ❓.</p></div>
+      {family.map(x => x.comments.length > 0 && <Fragment>
+        {r.subs.length > 0 && <p class="cgroup">{x === r ? "On this requirement" : <Fragment>On <a href={reqHref(x.code)}>{x.name}</a></Fragment>}</p>}
+        <ul class="clean thread" set:html={x.comments.map(cmt).join("")}></ul></Fragment>)}
+      {allCmts.length === 0 && <p class="meta" style="margin:0">No comments yet.</p>}
+      <p class="meta noq" hidden style="margin:0">No open questions.</p>
+    </div></aside>
+  </div>
+
+  <!-- an opened wireframe: the picture, its description, and the comments about it -->
+  {allWf.map(w => { const x = owner[w.req], wc = x.comments.filter(c => c.on?.key === w.key), sibs = allWf.filter(o => o.screen === w.screen);
+    return <div class="veil" data-wfd={w.key} hidden><div class="dialog" role="dialog" aria-modal="true" aria-label={w.name}>
+      <header><span class="code">{w.key}</span><h2>{w.name}{w.version && ` · version ${w.version}`}</h2><a class="iconbtn x" href="#wireframes" aria-label="Close" set:html={ICON.x}></a></header>
+      <div class="in">
+        {sibs.length > 1 && <div class="seg" style="margin-bottom:var(--s-4)">{sibs.map(o => <a href={`#w=${o.key}`} aria-pressed={o === w ? "true" : "false"}>Version {o.version}</a>)}</div>}
+        <div class="starbar"><Fragment set:html={writeBtn(x, `On wireframe ${w.key}`, "Comment on this wireframe")} />
+          <a class="btn" href={w.file} target="_blank" rel="noopener">Open the file on GitHub ↗</a></div>
+        <div class="wfpic">{w.image ? <img src={fileHref(w.image)} alt={w.name}> : <p class="meta" style="padding:var(--s-5)">No picture yet.</p>}</div>
+        <div class="cols" style="margin-top:16px">
+          <div class="stack"><section class="panel"><h2>Description</h2><div class="brief cmd" set:html={w.description || "<p>No description yet.</p>"}></div>
+            {w.questions.length > 0 && <Fragment><h3 class="dh">Questions written in the file</h3><ul class="bul">{w.questions.map(q => <li>{q}</li>)}</ul></Fragment>}</section></div>
+          <div class="stack"><section class="panel"><h2>Comments <span class="cc">{wc.length}</span></h2>
+            {wc.length ? <ul class="clean thread" set:html={wc.map(cmt).join("")}></ul> : <p class="meta" style="margin:0">No comments on this wireframe yet.</p>}</section></div>
+        </div>
+      </div></div></div>; })}
+
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script>
+    // tabs and opened wireframes follow the address (#wireframes, #w=R001-W01a, #c=R001-C01), so links can point straight at them
+    const show = () => {
+      const h = decodeURIComponent(location.hash.slice(1));
+      const wf = h.startsWith("w=") ? h.slice(2) : "", fc = h.startsWith("c=") ? h.slice(2) : "";
+      const tab = wf ? "wireframes" : fc ? "flowcharts" : ["overview", "wireframes", "flowcharts", "hifi", "prototype"].includes(h) ? h : "overview";
+      document.querySelectorAll<HTMLElement>("[data-tab]").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === tab)));
+      document.querySelectorAll<HTMLElement>("[data-pane]").forEach(p => (p.hidden = p.dataset.pane !== tab));
+      document.querySelectorAll<HTMLElement>("[data-wfd]").forEach(d => (d.hidden = d.dataset.wfd !== wf));
+      document.body.classList.toggle("noscroll", !!wf);
+      if (fc && document.querySelector(`[data-fc="${fc}"]`)) {
+        document.querySelectorAll<HTMLElement>("[data-fc]").forEach(d => (d.hidden = d.dataset.fc !== fc));
+        document.querySelectorAll<HTMLElement>("[data-fsel]").forEach(c => c.setAttribute("aria-pressed", String(c.dataset.fsel === fc)));
+      }
+      // comments about the open flowchart or wireframe stand out
+      document.querySelectorAll<HTMLElement>(".cside [data-on]").forEach(li => li.classList.toggle("hl", li.dataset.on === (fc || wf)));
+    };
+    addEventListener("hashchange", show); show();
+    // the opened wireframe covers the whole window, side columns included
+    document.querySelectorAll<HTMLElement>("[data-wfd]").forEach(v => document.body.append(v));
+    // close an opened wireframe with Esc or a click outside it
+    addEventListener("keydown", e => { if (e.key === "Escape" && location.hash.startsWith("#w=")) location.hash = "wireframes"; });
+    document.querySelectorAll<HTMLElement>("[data-wfd]").forEach(v => v.addEventListener("click", e => { if (e.target === v) location.hash = "wireframes"; }));
+
+    // "Show only open questions"
+    const fil = document.querySelector<HTMLElement>("[data-cfil]");
+    fil?.addEventListener("click", () => {
+      const only = fil.dataset.on !== "1"; fil.dataset.on = only ? "1" : "";
+      fil.textContent = only ? "Show all comments" : fil.dataset.label!;
+      let any = false;
+      document.querySelectorAll<HTMLElement>(".cside .thread > li").forEach(li => { li.hidden = only && li.dataset.q !== "open"; any ||= !li.hidden; });
+      document.querySelectorAll<HTMLElement>(".cside .cgroup").forEach(g => (g.hidden = only));
+      document.querySelector<HTMLElement>(".noq")!.hidden = any;
+    });
+    if (fil) fil.dataset.label = fil.textContent!;
+
+    // writing a comment: copy the "On wireframe …" first line, then open the GitHub comment box
+    const toast = document.getElementById("toast")!;
+    document.querySelectorAll<HTMLElement>("[data-write]").forEach(b => b.addEventListener("click", async () => {
+      const about = b.dataset.about;
+      if (about) {
+        try { await navigator.clipboard.writeText(about + "\n\n"); toast.textContent = `Copied “${about}”. Paste it as the first line of your comment on GitHub.`; }
+        catch { toast.textContent = `Start your comment on GitHub with: ${about}`; }
+        toast.hidden = false; setTimeout(() => (toast.hidden = true), 7000);
+      }
+      window.open(b.dataset.write, "_blank", "noopener");
+    }));
+  </script>
+  {allFc.some(f => f.chart) && <script type="module" is:inline>
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";
+    const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+    mermaid.initialize({ startOnLoad: false, theme: dark ? "dark" : "neutral", fontFamily: "Inter, system-ui, sans-serif", themeVariables: { fontSize: "14px" } });
+    // a hidden chart can't be measured, so each one is drawn when it is first shown
+    const draw = () => mermaid.run({ nodes: [...document.querySelectorAll("pre.mermaid:not([data-processed])")].filter(n => n.offsetParent) });
+    addEventListener("hashchange", () => setTimeout(draw)); draw();
+  </script>}
+</Layout>

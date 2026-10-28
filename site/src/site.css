@@ -1,0 +1,55 @@
+/* Additions for the real website, built on the prototype's tokens: links behave like the prototype's buttons */
+[hidden] { display: none !important }
+a.sl, a.users, a.tab, a.subi, a.wf, a.chip, a.btn, a.brand, .seg a, a.ctag { text-decoration: none; color: inherit }
+a.sl.on, a.sl.sub.on { color: var(--accent) }
+a.tab[aria-selected="true"] { color: var(--accent) }
+a.wf { display: block }
+a.ctag { display: inline-block; color: var(--accent) }
+a.ctag:hover, .crumb a:hover { text-decoration: underline; text-underline-offset: 3px }
+.crumb a { color: var(--muted) }
+.sl .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.sl.gone { display: none }
+.sdiv { height: 1px; background: var(--line); margin: 10px 10px 0 }
+.side .nomatch { margin: var(--s-2) var(--s-3) }
+.seg a { display: inline-flex; align-items: center; border: 0; background: var(--surface); padding: 5px 10px; font-size: var(--fs-sm); color: var(--muted) }
+.seg a[aria-pressed="true"] { background: var(--hover); color: var(--fg); font-weight: 600 }
+.updated.top { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--faint); white-space: nowrap }
+.updated.top svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2 }
+
+/* pictures: wireframes are drawings in files, shown whole */
+.wf .pic img { display: block; width: 100%; height: 100%; object-fit: contain; padding: var(--s-2) }
+.wfpic { max-width: none }
+.wfpic img { display: block; width: 100%; height: auto; max-height: 55vh; object-fit: contain }
+.tag.fin { background: var(--done-soft); color: var(--done) } .tag.can { background: var(--todo-soft); color: var(--todo) }
+body.noscroll { overflow: hidden }
+
+/* text written on GitHub: descriptions and comments */
+.cmd > :first-child { margin-top: 0 } .cmd > :last-child { margin-bottom: 0 }
+.cmd p { margin: var(--s-2) 0 }
+.cmd ul, .cmd ol { margin: var(--s-2) 0; padding-left: var(--s-5) }
+.cmd code { font-size: .92em; background: var(--surface-2); border-radius: 4px; padding: 1px 4px }
+.cmd img { max-width: 100% }
+.cmd table { border-collapse: collapse; margin: var(--s-3) 0; width: 100% }
+.cmd th, .cmd td { border: 1px solid var(--line); padding: var(--s-2) var(--s-3); text-align: left; vertical-align: top }
+.doc { padding: var(--s-5) } .doc h1 { margin-top: 0 } .doc h2 { margin-top: var(--s-5) }
+.dh { font-size: var(--fs-sm); font-weight: 600; margin: var(--s-4) 0 var(--s-1) }
+.thread .cmd { font-size: var(--fs-md); margin-top: 4px }
+.thread li { display: flex; gap: var(--s-3) }
+.thread .rep { display: inline-block; margin-top: 4px; font-size: var(--fs-xs) }
+.thread li.hl { background: var(--accent-soft); border-radius: var(--r-md); box-shadow: 0 0 0 6px var(--accent-soft) }
+.av { flex: none; width: 26px; height: 26px; border-radius: 50%; color: #fff; display: grid; place-items: center; font-size: var(--fs-sm); font-weight: 700 }
+.cwrite { display: grid; gap: var(--s-2); justify-items: start; padding-bottom: var(--s-3); margin-bottom: var(--s-3); border-bottom: 1px solid var(--line) }
+.cwrite .meta { margin: 0 }
+.cgroup { font-size: var(--fs-xs); font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--faint); margin: var(--s-3) 0 var(--s-2) }
+.cgroup a { color: var(--faint); text-decoration: underline; text-underline-offset: 3px }
+pre.mermaid { margin: 0; background: none; text-align: center; overflow-x: auto }
+
+/* the little message after "Comment on this wireframe" */
+.toast { position: fixed; left: 50%; bottom: var(--s-5); transform: translateX(-50%); z-index: 40; max-width: min(520px, calc(100vw - 32px));
+  background: var(--fg); color: var(--bg); border-radius: var(--r-md); padding: var(--s-3) var(--s-4); font-size: var(--fs-sm); box-shadow: 0 8px 24px var(--shadow) }
+.sl .cc { display: inline-flex; align-items: center; flex: none; white-space: nowrap }
+.sl .cc .chev { width: 14px; height: 14px }
+a.users.on { background: var(--accent-soft); color: var(--accent); border-color: transparent }
+td.name a { color: var(--fg) } tr.subrow td.name a { font-weight: 400 }
+tr.click:hover td.name a { text-decoration: underline; text-underline-offset: 3px }
+.cmd thead:not(:has(th:not(:empty))) { display: none }

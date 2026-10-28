@@ -1,0 +1,42 @@
+---
+// Overview: how many requirements are in each status, and what happened recently
+import Layout from "../layouts/Layout.astro";
+import { load, ST, ORDER, summary, esc, day } from "../lib/data.js";
+import { ICON, reqHref } from "../lib/ui.js";
+
+const { reqs, activity } = await load();
+const c = summary(reqs), t = reqs.length || 1;
+const SHOWN = 8;
+const item = a => `<li><i class="tli ${a.type}">${a.type === "comment" ? ICON.cmt : ICON.plus}</i>
+  <p class="tlb"><span class="tlm"><b>${esc(a.who)}</b> ${a.type === "added" ? "added" : a.question === "open" ? "asked a question on" : "commented on"}
+    <a class="tlink" href="${reqHref(a.req.code)}">${esc(a.req.name)}</a></span>${a.text ? `<span class="qt">“${esc(a.text)}”</span>` : ""}</p>
+  <span class="meta when" data-ago="${a.when}"></span></li>`;
+const days = list => [...new Set(list.map(a => day(a.when)))].map(d => `<div class="day">${d}</div><ul class="clean tl">${list.filter(a => day(a.when) === d).map(item).join("")}</ul>`).join("");
+---
+<Layout title="Overview" view="overview">
+  <h1>Overview</h1>
+  <div class="ov solo" style="margin-top:var(--s-4)"><div class="stack">
+    <section class="panel"><h2>Status</h2>
+      <div class="statusrow"><div><b>{reqs.length}</b><span>All requirements</span></div>
+        {ORDER.map(k => <div><b>{c[k]}</b><span><span class={`dot ${k}`}></span>{ST[k]}</span></div>)}</div>
+      <div style="margin-top:var(--s-4)"><div class="pbar">{["done", "closed"].map(k => <i style={`width:${c[k] / t * 100}%;background:var(--${k})`}></i>)}</div></div>
+    </section>
+    <section class="panel"><div class="row" style="margin-bottom:var(--s-3)"><h2 style="margin:0">Recent activity</h2>
+      <span class="legend" style="margin:0 0 0 auto"><span><i class="tli comment sm" set:html={ICON.cmt}></i>Comments</span><span><i class="tli added sm" set:html={ICON.plus}></i>Added</span></span></div>
+      {activity.length ? <Fragment>
+        <div id="actShort" set:html={days(activity.slice(0, SHOWN))}></div>
+        {activity.length > SHOWN && <Fragment><div id="actAll" hidden set:html={days(activity)}></div>
+          <button class="tlink" id="actMore" style="margin-top:var(--s-2)">Show all activity ({activity.length})</button></Fragment>}
+      </Fragment> : <p class="meta" style="margin:0">Nothing yet.</p>}
+    </section>
+  </div></div>
+  <script>
+    const more = document.getElementById("actMore");
+    more?.addEventListener("click", () => {
+      const all = document.getElementById("actAll")!, short = document.getElementById("actShort")!;
+      all.hidden = !all.hidden; short.hidden = !all.hidden;
+      more.textContent = all.hidden ? more.dataset.label! : "Show less";
+    });
+    if (more) more.dataset.label = more.textContent!;
+  </script>
+</Layout>

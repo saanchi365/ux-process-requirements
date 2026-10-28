@@ -1,0 +1,56 @@
+---
+// All requirements: a table with sub-requirements indented underneath; filter by status, list or grouped by feature
+import Layout from "../layouts/Layout.astro";
+import { load, ST, ORDER, esc } from "../lib/data.js";
+import { code, st, reqHref } from "../lib/ui.js";
+
+const { reqs, features } = await load();
+const count = (n, one, many) => n ? `${n} ${n === 1 ? one : many}` : "";
+const link = (r, tab, n, one, many) => n ? `<a class="tlink" href="${reqHref(r.code)}#${tab}">${count(n, one, many)}</a>` : `<span class="meta">No ${many} yet</span>`;
+const row = (r, sub) => `<tr class="click ${sub ? "subrow" : ""}" data-href="${reqHref(r.code)}" data-st="${r.st}">
+  <td>${sub ? `<span class="subcode"><span class="elbow"></span>${code(r.code.slice(5))}</span>` : code(r.code)}</td>
+  <td class="name"><a href="${reqHref(r.code)}">${esc(r.name)}</a></td><td>${st(r.st)}</td>
+  <td>${link(r, "wireframes", r.wireframes.length, "wireframe", "wireframes")}</td>
+  <td>${link(r, "flowcharts", r.flowcharts.length, "flowchart", "flowcharts")}</td>
+  <td><div class="row">${sub ? "" : r.features.length ? r.features.map(f => `<span class="fp f1"><i></i>${esc(f)}</span>`).join("") : '<span class="fp none">No feature yet</span>'}</div></td></tr>`;
+const rows = list => list.map(r => `<tbody class="rg">${row(r)}${r.subs.map(s => row(s, true)).join("")}</tbody>`).join("");
+const grouped = features.map(f => `<tbody><tr class="group"><td colspan="6"><span class="fp f1"><i></i>${esc(f)}</span></td></tr></tbody>` + rows(reqs.filter(r => r.features.includes(f)))).join("")
+  + `<tbody><tr class="group"><td colspan="6"><span class="fp none">No feature yet</span></td></tr></tbody>` + rows(reqs.filter(r => !r.features.length));
+const head = "<thead><tr><th>Code</th><th>Requirement</th><th>Status</th><th>Wireframes</th><th>Flowcharts</th><th>Feature</th></tr></thead>";
+---
+<Layout title="All requirements" view="all">
+  <h1>All requirements</h1>
+  <p class="brief">Every requirement, with its sub-requirements indented underneath. Click a row to open it, or a wireframes or flowcharts link to go straight there.</p>
+  <div class="side2 solo"><div style="min-width:0">
+    <div class="toolbar">
+      {["all", ...ORDER].map(k => <button class="chip" data-filter={k} aria-pressed={k === "all" ? "true" : "false"}>{k === "all" ? "All" : ST[k]}</button>)}
+      <span style="flex:1"></span>
+      <div class="seg" role="group" aria-label="Show as a list or grouped by feature"><button data-group="0" aria-pressed="true">List</button><button data-group="1" aria-pressed="false">Grouped by feature</button></div>
+    </div>
+    <div class="tw"><table data-view="0" set:html={head + rows(reqs)}></table><table data-view="1" hidden set:html={head + grouped}></table></div>
+    <p class="meta nomatch" hidden style="margin-top:var(--s-3)">No requirements with this status.</p>
+  </div></div>
+  <script>
+    const chips = document.querySelectorAll<HTMLElement>("[data-filter]");
+    const apply = (f: string) => {
+      chips.forEach(c => c.setAttribute("aria-pressed", String(c.dataset.filter === f)));
+      let any = false;
+      document.querySelectorAll<HTMLElement>("tbody.rg").forEach(g => {
+        const rows = [...g.querySelectorAll<HTMLElement>("tr")];
+        // a requirement stays visible when one of its sub-requirements matches
+        const hit = rows.map(r => f === "all" || r.dataset.st === f);
+        rows.forEach((r, i) => (r.hidden = !(hit[i] || (i === 0 && hit.some(Boolean)))));
+        any ||= hit.some(Boolean);
+      });
+      document.querySelector<HTMLElement>(".nomatch")!.hidden = any;
+    };
+    chips.forEach(c => c.addEventListener("click", () => apply(c.dataset.filter!)));
+    document.querySelectorAll<HTMLElement>("[data-group]").forEach(b => b.addEventListener("click", () => {
+      document.querySelectorAll("[data-group]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+      document.querySelectorAll<HTMLElement>("table[data-view]").forEach(t => (t.hidden = t.dataset.view !== b.dataset.group));
+    }));
+    document.querySelectorAll<HTMLElement>("tr[data-href]").forEach(tr => tr.addEventListener("click", e => {
+      if (!(e.target as HTMLElement).closest("a")) location.href = tr.dataset.href!;
+    }));
+  </script>
+</Layout>

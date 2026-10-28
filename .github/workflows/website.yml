@@ -1,0 +1,51 @@
+# Builds the handbook website from the requirements, wireframes, flowcharts and comments, and puts it on GitHub Pages.
+# Runs after every change: a commit, a new or edited requirement, a comment, or the organise helper finishing.
+name: Website
+on:
+  push:
+    branches: [main]
+  issues:
+    types: [opened, edited, closed, reopened, labeled, unlabeled, deleted]
+  issue_comment:
+    types: [created, edited, deleted]
+  workflow_run:
+    workflows: [Organise requirements and wireframes]
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: read
+  pages: write
+  id-token: write
+# only the newest change needs to be built
+concurrency:
+  group: website
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+        working-directory: site
+      - run: npm run build
+        working-directory: site
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

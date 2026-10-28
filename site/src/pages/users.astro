@@ -1,0 +1,33 @@
+---
+// About users: the pages in the product folder (user understanding, user stories, journey maps)
+import fs from "node:fs";
+import path from "node:path";
+import Layout from "../layouts/Layout.astro";
+import { html, REPO_URL } from "../lib/data.js";
+
+const dir = path.resolve("..", "product");
+const read = f => fs.readFileSync(path.join(dir, f), "utf8");
+const journeys = fs.existsSync(path.join(dir, "journey-maps")) ? fs.readdirSync(path.join(dir, "journey-maps")).filter(f => f.endsWith(".md")).sort() : [];
+const pages = [
+  ["understanding", "User understanding", "user-understanding.md"],
+  ["stories", "User stories", "user-stories.md"],
+  ...journeys.map((f, i) => [`journey${i + 1}`, journeys.length > 1 ? `Journey map ${f.match(/^J\d+/)?.[0] || i + 1}` : "Journey map", `journey-maps/${f}`]),
+].filter(([, , f]) => fs.existsSync(path.join(dir, f)));
+---
+<Layout title="About users" view="users">
+  <h1>About users</h1>
+  <p class="brief">Who uses the tool, what they want to do, and how they move through it.</p>
+  <div class="tabs" role="tablist">{pages.map(([k, n], i) => <a class="tab" role="tab" href={`#${k}`} data-tab={k} aria-selected={i === 0 ? "true" : "false"}>{n}</a>)}</div>
+  {pages.map(([k, , f], i) => <section class="panel cmd doc" data-pane={k} hidden={i > 0}>
+    <Fragment set:html={html(read(f))} />
+    <a class="tlink" href={`${REPO_URL}/blob/main/product/${f}`} target="_blank" rel="noopener">Open the file on GitHub ↗</a></section>)}
+  <script>
+    const show = () => {
+      const tabs = [...document.querySelectorAll<HTMLElement>("[data-tab]")];
+      const k = tabs.some(t => t.dataset.tab === location.hash.slice(1)) ? location.hash.slice(1) : tabs[0]?.dataset.tab;
+      tabs.forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === k)));
+      document.querySelectorAll<HTMLElement>("[data-pane]").forEach(p => (p.hidden = p.dataset.pane !== k));
+    };
+    addEventListener("hashchange", show); show();
+  </script>
+</Layout>

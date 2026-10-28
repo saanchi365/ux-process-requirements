@@ -1,0 +1,14 @@
+{
+  "name": "ux-handbook",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node copy-files.mjs && astro dev",
+    "build": "node copy-files.mjs && astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "7.4.2",
+    "marked": "18.1.2"
+  }
+}

@@ -1,0 +1,106 @@
+---
+// Every page: top bar, side panel with the requirements, and the page itself.
+import "../handbook.css";
+import "../site.css";
+import { load, esc } from "../lib/data.js";
+import { ICON, base, reqHref } from "../lib/ui.js";
+
+const { title, current = "", view = "" } = Astro.props;
+const { reqs, features, builtAt } = await load();
+const free = reqs.filter(r => !r.features.length);
+
+const link = (r, cls = "") => {
+  const on = r.code === current || r.subs.some(s => s.code === current);
+  const open = on && r.subs.length;
+  let h = `<a class="sl ${r.code === current ? "on" : ""} ${open ? "exp" : ""} ${cls}" href="${reqHref(r.code)}" data-name="${esc((r.code + " " + r.name).toLowerCase())}"><span class="dot ${r.st}"></span><span class="code">${r.code}</span><span class="nm">${esc(r.name)}</span>${r.subs.length ? `<span class="cc" data-exp title="Show sub-requirements">${r.subs.length}${ICON.chev}</span>` : ""}</a>`;
+  if (r.subs.length) h += `<div class="subs" ${open ? "" : "hidden"}>${r.subs.map(s => `<a class="sl sub ${s.code === current ? "on" : ""}" href="${reqHref(s.code)}" data-name="${esc((s.code + " " + s.name).toLowerCase())}"><span class="dot ${s.st}"></span>${s.code.slice(5)} · ${esc(s.name)}</a>`).join("")}</div>`;
+  return h;
+};
+const byFeature = features.map(f => { const rs = reqs.filter(r => r.features.includes(f));
+    return `<div class="sg">${esc(f)}<span class="cc">${rs.length}</span></div>${rs.map(r => link(r)).join("")}`; }).join("")
+  + `<div class="sg none">No feature yet<span class="cc">${free.length}</span></div>${free.map(r => link(r)).join("")}`;
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{title ? `${title} · UX handbook` : "UX handbook"}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+</head>
+<body>
+<header class="top">
+  <button class="iconbtn menu-btn" id="menuBtn" aria-label="Show the menu" set:html={ICON.menu}></button>
+  <a class="brand" href={base}>Contract management <small>UX handbook</small></a>
+  <span class="updated top" title="The website is rebuilt from GitHub after every change" data-built={builtAt}><Fragment set:html={ICON.sync} /><span>Updated</span></span>
+  <input class="search" id="search" type="search" placeholder="Search requirements, e.g. R016 or version" aria-label="Search requirements">
+</header>
+
+<div class="frame">
+  <nav class="side" id="side" aria-label="Handbook">
+    <a class={`users ${view === "users" ? "on" : ""}`} href={`${base}users/`}><Fragment set:html={ICON.users} />About users<span>3 pages</span></a>
+    <a class={`sl ${view === "overview" ? "on" : ""}`} href={base} style="margin-top:10px"><Fragment set:html={ICON.home} />Overview</a>
+    <div class="sdiv"></div>
+    <a class={`sl ${view === "all" ? "on" : ""}`} href={`${base}requirements/`} style="margin-top:10px;font-weight:600"><Fragment set:html={ICON.list} />Requirements<span class="cc">{reqs.length} · see all</span></a>
+    <div class="vseg" role="group" aria-label="Show requirements as a list or by feature">
+      <button data-sidegroup="0" aria-pressed="true"><Fragment set:html={ICON.list} />List</button><button data-sidegroup="1" aria-pressed="false"><Fragment set:html={ICON.grid} />By feature</button>
+    </div>
+    <div class="slist" data-list="0" set:html={reqs.map(r => link(r)).join("")}></div>
+    <div class="slist" data-list="1" hidden set:html={byFeature}></div>
+    <p class="meta nomatch" hidden>No requirement matches.</p>
+  </nav>
+  <main class="main" id="main"><slot /></main>
+</div>
+
+<script>
+  // side panel: List or By feature (remembered), sub-requirements open and close, search narrows the list
+  const side = document.getElementById("side");
+  const setGroup = g => {
+    side.querySelectorAll("[data-sidegroup]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.sidegroup === g)));
+    side.querySelectorAll("[data-list]").forEach(l => (l.hidden = l.dataset.list !== g));
+    try { localStorage.setItem("sidegroup", g); } catch {}
+  };
+  try { setGroup(localStorage.getItem("sidegroup") || "0"); } catch {}
+  side.addEventListener("click", e => {
+    const t = e.target as HTMLElement;
+    const g = t.closest<HTMLElement>("[data-sidegroup]");
+    if (g) return setGroup(g.dataset.sidegroup!);
+    const x = t.closest("[data-exp]");
+    if (x) {
+      e.preventDefault();
+      const a = x.closest(".sl")!, subs = a.nextElementSibling as HTMLElement;
+      subs.hidden = !subs.hidden; a.classList.toggle("exp", !subs.hidden);
+    }
+  });
+  const search = document.getElementById("search") as HTMLInputElement;
+  search.addEventListener("input", () => {
+    const q = search.value.trim().toLowerCase();
+    let any = false;
+    side.querySelectorAll<HTMLElement>(".slist .sl").forEach(a => {
+      const hit = !q || a.dataset.name!.includes(q);
+      a.classList.toggle("gone", !hit); any ||= hit;
+      if (q && hit && a.classList.contains("sub")) (a.parentElement as HTMLElement).hidden = false;
+    });
+    side.querySelector<HTMLElement>(".nomatch")!.hidden = any;
+    side.classList.add("show");
+  });
+  document.getElementById("menuBtn")!.addEventListener("click", () => side.classList.toggle("show"));
+
+  // "Updated 5 min ago": when the website was last rebuilt from GitHub
+  const up = document.querySelector<HTMLElement>("[data-built]")!;
+  const tick = () => {
+    const m = Math.round((Date.now() - +new Date(up.dataset.built!)) / 60000);
+    up.querySelector("span")!.textContent = m < 1 ? "Updated just now" : m < 60 ? `Updated ${m} min ago` : m < 1440 ? `Updated ${Math.round(m / 60)} h ago` : `Updated ${Math.round(m / 1440)} days ago`;
+  };
+  tick(); setInterval(tick, 60000);
+
+  // any "time ago" on the page stays current
+  document.querySelectorAll<HTMLElement>("[data-ago]").forEach(el => {
+    const m = Math.round((Date.now() - +new Date(el.dataset.ago!)) / 60000);
+    el.textContent = m < 1 ? "Just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : m < 2880 ? "Yesterday" : m < 10080 ? `${Math.round(m / 1440)} days ago`
+      : new Date(el.dataset.ago!).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  });
+</script>
+</body>
+</html>
