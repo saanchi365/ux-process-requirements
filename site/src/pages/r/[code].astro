@@ -24,8 +24,13 @@ const cmt = c => `<li class="${c.question ? "cq" : ""} ${c.question === "closed"
   ${c.on ? `<a class="ctag" href="#${c.on.kind === "wireframe" ? "w" : "c"}=${c.on.key}">on ${aboutName(c.on)}</a>` : ""}
   <div class="cmd">${c.html}</div>
   <a class="tlink rep" href="${c.url}" target="_blank" rel="noopener">Reply on GitHub ↗</a></div></li>`;
-// the button that starts a comment: it copies the "On wireframe …" first line, then opens the GitHub issue's comment box
-const writeBtn = (x, about, label) => `<button class="btn primary" data-write="${x.url}#issuecomment-new" ${about ? `data-about="${esc(about)}"` : ""}>${ICON.cmt}${label}</button>`;
+// a comment on the whole requirement opens its GitHub issue straight away
+const writeBtn = x => `<button class="btn primary" data-write="${x.url}#issuecomment-new">${ICON.cmt}Write a comment</button>`;
+// a comment on one wireframe version or one flowchart opens the comment helper: it shows which one,
+// and the first line ("On wireframe R001-W01b") to paste on GitHub so the comment lands next to it here
+const wfTitle = w => `${w.name}${w.version ? ` · version ${w.version}` : ""}`;
+const cmtBtn = (x, kind, key, title, label, img = "", cls = "btn primary") => `<button class="${cls}" data-cmt="${x.url}#issuecomment-new" data-line="On ${kind} ${key}"
+  data-title="${esc(title)}" data-key="${key}" ${img ? `data-img="${img}"` : ""}>${ICON.cmt}${label}</button>`;
 const comments = x => x.comments;
 const allCmts = family.flatMap(comments);
 const nOpen = allCmts.filter(c => c.question === "open").length;
@@ -34,10 +39,13 @@ const tabs = [["overview", "Overview", ""], ["wireframes", "Wireframes", nScreen
 const sm = summary(r.subs);
 
 // a wireframe card: its picture, name, code and comment count
-const card = w => { const n = owner[w.req].comments.filter(c => c.on?.key === w.key).length;
-  return `<a class="wf" href="#w=${w.key}"><span class="pic">${w.image ? `<img src="${fileHref(w.image)}" alt="" loading="lazy">` : ""}</span>
-    <span class="cap"><b>${esc(w.name)}${w.version ? ` · version ${w.version}` : ""}</b><span class="code" style="justify-self:start">${w.key}</span>
-    <span class="row">${w.status === "final" ? '<span class="tag fin">Final</span>' : w.status === "cancel" ? '<span class="tag can">Not used</span>' : ""}${n ? `<span class="cbadge" style="margin-left:auto">${ICON.cmt}${n}</span>` : ""}</span></span></a>`; };
+// …and its own Comment button, so every version can be commented on without opening it first
+const card = w => { const n = owner[w.req].comments.filter(c => c.on?.key === w.key).length, img = w.image ? fileHref(w.image) : "";
+  return `<div class="wf"><a class="wfopen" href="#w=${w.key}"><span class="pic">${img ? `<img src="${img}" alt="" loading="lazy">` : ""}</span>
+    <span class="cap"><b>${esc(wfTitle(w))}</b><span class="code" style="justify-self:start">${w.key}</span>
+    ${w.status ? `<span class="row">${w.status === "final" ? '<span class="tag fin">Final</span>' : '<span class="tag can">Not used</span>'}</span>` : ""}</span></a>
+    <div class="wfact">${cmtBtn(owner[w.req], "wireframe", w.key, wfTitle(w), w.version ? `Comment on version ${w.version}` : "Comment", img, "btn")}
+      ${n ? `<a class="cbadge" href="#w=${w.key}" title="See the comments on this wireframe">${ICON.cmt}${n}</a>` : ""}</div></div>`; };
 ---
 <Layout title={r.name} current={r.code}>
   <div class="rq"><div class="rqmain">
@@ -79,7 +87,7 @@ const card = w => { const n = owner[w.req].comments.filter(c => c.on?.key === w.
         {allFc.length > 1 && <div class="toolbar" style="margin:0">{allFc.map((f, i) => <a class="chip" href={`#c=${f.key}`} data-fsel={f.key} aria-pressed={i === 0 ? "true" : "false"}>{f.name}</a>)}</div>}
         {allFc.map((f, i) => <div data-fc={f.key} hidden={i > 0} class="stack">
           <section class="panel fcmain"><div class="row" style="margin-bottom:var(--s-3)"><h2 style="margin:0">{f.name}</h2><span class="code">{f.key}</span><span style="flex:1"></span>
-            <Fragment set:html={writeBtn(owner[f.req], `On flowchart ${f.key}`, "Comment on this flowchart")} /></div>
+            <Fragment set:html={cmtBtn(owner[f.req], "flowchart", f.key, f.name, "Comment on this flowchart")} /></div>
             {f.chart ? <pre class="mermaid">{f.chart}</pre> : <p class="meta">This flowchart has no chart yet.</p>}</section>
           <section class="panel"><h2>Description</h2><div class="brief cmd" set:html={f.description || "<p>No description yet.</p>"}></div>
             {f.questions.length > 0 && <Fragment><h3 class="dh">Questions written in the file</h3><ul class="bul">{f.questions.map(q => <li>{q}</li>)}</ul></Fragment>}
@@ -95,7 +103,7 @@ const card = w => { const n = owner[w.req].comments.filter(c => c.on?.key === w.
   <aside class="cside single"><div class="chead"><h2>Comments <span class="cc">{allCmts.length}</span></h2>
       {nOpen > 0 && <button class="tlink qonly" data-cfil>Show only open questions ({nOpen})</button>}</div>
     <div class="cbody">
-      <div class="cwrite"><Fragment set:html={writeBtn(r, "", "Write a comment")} /><p class="meta">Opens this requirement on GitHub. To ask an open question, start your comment with ❓.</p></div>
+      <div class="cwrite"><Fragment set:html={writeBtn(r)} /><p class="meta">A comment on the whole requirement. To comment on one wireframe, use the <b>Comment</b> button under it. To ask an open question, start your comment with ❓.</p></div>
       {family.map(x => x.comments.length > 0 && <Fragment>
         {r.subs.length > 0 && <p class="cgroup">{x === r ? "On this requirement" : <Fragment>On <a href={reqHref(x.code)}>{x.name}</a></Fragment>}</p>}
         <ul class="clean thread" set:html={x.comments.map(cmt).join("")}></ul></Fragment>)}
@@ -110,7 +118,7 @@ const card = w => { const n = owner[w.req].comments.filter(c => c.on?.key === w.
       <header><span class="code">{w.key}</span><h2>{w.name}{w.version && ` · version ${w.version}`}</h2><a class="iconbtn x" href="#wireframes" aria-label="Close" set:html={ICON.x}></a></header>
       <div class="in">
         {sibs.length > 1 && <div class="seg" style="margin-bottom:var(--s-4)">{sibs.map(o => <a href={`#w=${o.key}`} aria-pressed={o === w ? "true" : "false"}>Version {o.version}</a>)}</div>}
-        <div class="starbar"><Fragment set:html={writeBtn(x, `On wireframe ${w.key}`, "Comment on this wireframe")} />
+        <div class="starbar"><Fragment set:html={cmtBtn(x, "wireframe", w.key, wfTitle(w), w.version ? `Comment on version ${w.version}` : "Comment on this wireframe", w.image ? fileHref(w.image) : "")} />
           <a class="btn" href={w.file} target="_blank" rel="noopener">Open the file on GitHub ↗</a></div>
         <div class="wfpic">{w.image ? <img src={fileHref(w.image)} alt={w.name}> : <p class="meta" style="padding:var(--s-5)">No picture yet.</p>}</div>
         <div class="cols" style="margin-top:16px">
@@ -121,7 +129,19 @@ const card = w => { const n = owner[w.req].comments.filter(c => c.on?.key === w.
         </div>
       </div></div></div>; })}
 
-  <div class="toast" id="toast" role="status" hidden></div>
+  <!-- the comment helper: which wireframe or flowchart the comment is about, and the two steps to comment on GitHub -->
+  <div class="veil" id="cmtHelp" hidden><div class="dialog chelp" role="dialog" aria-modal="true" aria-labelledby="chTitle">
+    <header><h2 id="chTitle">Comment</h2><button class="iconbtn x" data-chclose aria-label="Close" set:html={ICON.x}></button></header>
+    <div class="in">
+      <div class="chabout"><img id="chImg" alt="" hidden><div><span class="meta">Your comment is about</span><b id="chWhat"></b><span class="code" id="chKey"></span></div></div>
+      <ol class="chsteps">
+        <li><b>1. Copy this first line</b><div class="chline"><code id="chLine"></code><button class="btn" id="chCopy">Copy</button></div>
+          <span class="meta">It tells the website which one your comment is about.</span></li>
+        <li><b>2. Paste it on GitHub, then write your comment below it</b><button class="btn primary" id="chGo">Open GitHub to write it ↗</button>
+          <span class="meta">To ask an open question, start the next line with ❓.</span></li>
+      </ol>
+      <p class="meta" style="margin:0">Your comment shows here, next to <span id="chWhat2"></span>, a minute or two after you post it.</p>
+    </div></div></div>
 
   <script>
     // tabs and opened wireframes follow the address (#wireframes, #w=R001-W01a, #c=R001-C01), so links can point straight at them
@@ -159,17 +179,36 @@ const card = w => { const n = owner[w.req].comments.filter(c => c.on?.key === w.
     });
     if (fil) fil.dataset.label = fil.textContent!;
 
-    // writing a comment: copy the "On wireframe …" first line, then open the GitHub comment box
-    const toast = document.getElementById("toast")!;
-    document.querySelectorAll<HTMLElement>("[data-write]").forEach(b => b.addEventListener("click", async () => {
-      const about = b.dataset.about;
-      if (about) {
-        try { await navigator.clipboard.writeText(about + "\n\n"); toast.textContent = `Copied “${about}”. Paste it as the first line of your comment on GitHub.`; }
-        catch { toast.textContent = `Start your comment on GitHub with: ${about}`; }
-        toast.hidden = false; setTimeout(() => (toast.hidden = true), 7000);
-      }
-      window.open(b.dataset.write, "_blank", "noopener");
-    }));
+    // a comment on the whole requirement: straight to GitHub
+    document.querySelectorAll<HTMLElement>("[data-write]").forEach(b => b.addEventListener("click", () => window.open(b.dataset.write, "_blank", "noopener")));
+
+    // a comment on one wireframe or flowchart: the helper shows which one, copies the first line, then opens GitHub
+    const help = document.getElementById("cmtHelp")!, $ = (id: string) => document.getElementById(id)!;
+    document.body.append(help);
+    const copy = async () => {
+      try { await navigator.clipboard.writeText($("chLine").textContent + "\n\n"); $("chCopy").textContent = "Copied ✓"; }
+      catch { $("chCopy").textContent = "Select and copy it"; }
+    };
+    document.addEventListener("click", e => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>("[data-cmt]");
+      if (!b) return;
+      $("chTitle").textContent = b.dataset.line!.startsWith("On flowchart") ? "Comment on this flowchart" : "Comment on this wireframe";
+      $("chWhat").textContent = $("chWhat2").textContent = b.dataset.title!;
+      $("chKey").textContent = b.dataset.key!;
+      const img = $("chImg") as HTMLImageElement;
+      img.hidden = !b.dataset.img; if (b.dataset.img) img.src = b.dataset.img;
+      $("chLine").textContent = b.dataset.line!;
+      $("chCopy").textContent = "Copy";
+      $("chGo").dataset.go = b.dataset.cmt;
+      help.hidden = false; copy();
+    });
+    $("chCopy").addEventListener("click", copy);
+    $("chGo").addEventListener("click", () => { copy(); window.open($("chGo").dataset.go, "_blank", "noopener"); });
+    const closeHelp = () => (help.hidden = true);
+    help.querySelector("[data-chclose]")!.addEventListener("click", closeHelp);
+    help.addEventListener("click", e => { if (e.target === help) closeHelp(); });
+    // Esc closes the helper first, and the opened wireframe behind it only on the next press
+    addEventListener("keydown", e => { if (e.key === "Escape" && !help.hidden) { e.stopImmediatePropagation(); closeHelp(); } }, true);
   </script>
   {allFc.some(f => f.chart) && <script type="module" is:inline>
     import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";

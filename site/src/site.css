@@ -53,3 +53,22 @@ a.users.on { background: var(--accent-soft); color: var(--accent); border-color:
 td.name a { color: var(--fg) } tr.subrow td.name a { font-weight: 400 }
 tr.click:hover td.name a { text-decoration: underline; text-underline-offset: 3px }
 .cmd thead:not(:has(th:not(:empty))) { display: none }
+
+/* a wireframe card: open it by its picture; comment on it with its own button */
+.wf { display: flex; flex-direction: column }
+.wf .wfopen { display: block; color: inherit; text-decoration: none }
+.wfact { display: flex; align-items: center; gap: var(--s-2); padding: 0 10px 10px; margin-top: auto }
+.wfact .btn { height: var(--h-chip); font-size: var(--fs-sm) }
+.wfact .cbadge { margin-left: auto; text-decoration: none }
+
+/* the comment helper */
+.veil#cmtHelp { z-index: 35 }
+.chelp { width: min(560px, 100%) }
+.chabout { display: flex; gap: var(--s-3); align-items: center; padding: var(--s-3); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md) }
+.chabout img { width: 96px; height: 72px; object-fit: contain; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-sm); flex: none }
+.chabout > div { display: grid; gap: 2px; min-width: 0 }
+.chabout .code { justify-self: start }
+.chsteps { margin: var(--s-4) 0; padding-left: 0; list-style: none; display: grid; gap: var(--s-4) }
+.chsteps li { display: grid; gap: var(--s-2); justify-items: start }
+.chline { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap }
+.chline code { font-size: var(--fs-md); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 5px 10px; user-select: all }
