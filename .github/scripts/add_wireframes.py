@@ -9,12 +9,19 @@ own folder (inside their requirement's folder).
 Pages that already exist keep everything written in them; only the line saying which requirement they are
 for is kept up to date. If a picture is renamed (e.g. ...-final), its page is renamed with it. Pictures whose
 names don't fit are listed in PICTURES-NOT-ADDED.md in that folder, which disappears once they are fixed.
+
+Every wireframe page and every flowchart page (flowcharts/R012-C01-....md) gets a line under its title,
+"💬 Comment on this wireframe on the website ↗", that opens it on the handbook website, where people comment.
 """
+import json
+import os
 import re
 
-from issues import REQUIREMENTS, WIREFRAME, all_issues, by_code, requirement_folders, trail
+from issues import REQUIREMENTS, WIREFRAME, all_issues, by_code, gh, requirement_folders, trail
 
 LINK = re.compile(r"!\[[^\]]*\]\((?:\.\./)?images/([^)]+)\)")
+FLOWCHART = re.compile(r"^(R\d{3,}(?:-S\d{2,})*)-C(\d{2,})(?:-.*)?$")
+COMMENT_LINE = "💬 [Comment on this"
 
 
 def screen(name, version=True):
@@ -35,7 +42,34 @@ def picture_of(page):
     return m.group(1) if m else None
 
 
+def website():
+    """The handbook website's address, e.g. https://saanchi365.github.io/ux-process-requirements/"""
+    repo = os.environ.get("GITHUB_REPOSITORY") or json.loads(gh("repo", "view", "--json", "nameWithOwner"))["nameWithOwner"]
+    owner, name = repo.split("/")
+    return f"https://{owner.lower()}.github.io/{name}/"
+
+
+def comment_line(page, owner, kind, key):
+    """A line under a file's title that opens this wireframe or flowchart on the website, where people comment on it."""
+    old = page.read_text(encoding="utf-8")
+    lines = old.split("\n")
+    had = [i for i, l in enumerate(lines) if l.startswith(COMMENT_LINE)]
+    for i in reversed(had):  # take out the old line (and the empty line after it) before adding it fresh
+        del lines[i:i + 2 if i + 1 < len(lines) and not lines[i + 1].strip() else i + 1]
+    # it goes after the title, and after the line naming the requirement when there is one
+    at = 2 if len(lines) > 1 and lines[1].strip() else 1
+    while at < len(lines) and not lines[at].strip():
+        del lines[at]
+    letter = "w" if kind == "wireframe" else "c"
+    lines[at:at] = ["", f"{COMMENT_LINE} {kind} on the website ↗]({SITE}r/{owner}/#{letter}={key})", ""]
+    text = "\n".join(lines)
+    if text != old:
+        page.write_text(text, encoding="utf-8", newline="\n")
+        print(f"comment line in {page.name}")
+
+
 issues = all_issues() if REQUIREMENTS.is_dir() else {}
+SITE = website()
 codes = by_code(issues)
 for owner, requirement in requirement_folders().items():
     folder = requirement / "wireframes"
@@ -85,6 +119,11 @@ for owner, requirement in requirement_folders().items():
                 page.write_text("\n".join(lines), encoding="utf-8", newline="\n")
                 print(f"named {page.name}")
 
+    # the comment line on every wireframe page
+    for stem, page in pages.items():
+        if page.exists():
+            comment_line(page, owner, "wireframe", screen(stem))
+
     # a compare page in every versions folder: all versions of the screen side by side
     for sub in [d for d in folder.iterdir() if d.is_dir() and d != pics]:
         compare = sub / f"{sub.name}-compare.md"
@@ -123,3 +162,10 @@ for owner, requirement in requirement_folders().items():
                         + "".join(f"- `images/{w}`\n" for w in wrong), encoding="utf-8", newline="\n")
     elif note.exists():
         note.unlink()
+
+# the comment line on every flowchart page
+for owner, requirement in requirement_folders().items():
+    for page in sorted((requirement / "flowcharts").glob("*.md")):
+        m = FLOWCHART.match(page.stem)
+        if m and m.group(1) == owner:
+            comment_line(page, owner, "flowchart", f"{owner}-C{m.group(2)}")

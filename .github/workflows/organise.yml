@@ -9,7 +9,7 @@ on:
     types: [opened, edited, reopened, closed]
   push:
     branches: [main]
-    paths: ["requirements/**/images/**"]
+    paths: ["requirements/**/images/**", "requirements/**/flowcharts/**"]
   schedule:
     - cron: "17 * * * *"  # once an hour, to catch requirements moved inside another one later
   workflow_dispatch:
