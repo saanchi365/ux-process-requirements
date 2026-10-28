@@ -2,9 +2,11 @@
 // Overview: how many requirements are in each status, and what happened recently
 import Layout from "../layouts/Layout.astro";
 import { load, ST, ORDER, summary, esc, day } from "../lib/data.js";
-import { ICON, reqHref } from "../lib/ui.js";
+import { ICON, reqHref, base } from "../lib/ui.js";
 
-const { reqs, activity } = await load();
+const { reqs, all, activity } = await load();
+const nWf = all.reduce((n, x) => n + x.wireframes.length, 0), nFc = all.reduce((n, x) => n + x.flowcharts.length, 0);
+const many = (n, one, none) => n ? `${n} ${one}${n > 1 ? "s" : ""}` : none;
 const c = summary(reqs), t = reqs.length || 1;
 const SHOWN = 8;
 const item = a => `<li><i class="tli ${a.type}">${a.type === "comment" ? ICON.cmt : ICON.plus}</i>
@@ -29,6 +31,12 @@ const days = list => [...new Set(list.map(a => day(a.when)))].map(d => `<div cla
           <button class="tlink" id="actMore" style="margin-top:var(--s-2)">Show all activity ({activity.length})</button></Fragment>}
       </Fragment> : <p class="meta" style="margin:0">Nothing yet.</p>}
     </section>
+    <div class="cvcards">
+      <a class="cvcard" href={`${base}canvas/wireframes/`}><span class="prev"><span class="col"><i></i><i></i></span><span class="col"><i></i><i></i></span><span class="col"><i></i></span></span>
+        <span class="row"><b>Wireframes canvas</b><span class="meta" style="margin-left:auto">{many(nWf, "wireframe", "No wireframes yet")}</span></span></a>
+      <a class="cvcard" href={`${base}canvas/flowcharts/`}><span class="prev"><span class="col"><i style="width:60px;height:14px"></i><i style="width:60px;height:14px"></i><i style="width:60px;height:14px"></i></span><span class="col"><i style="width:60px;height:14px"></i><i style="width:60px;height:14px"></i></span></span>
+        <span class="row"><b>Flowcharts canvas</b><span class="meta" style="margin-left:auto">{many(nFc, "flowchart", "No flowcharts yet")}</span></span></a>
+    </div>
   </div></div>
   <script>
     const more = document.getElementById("actMore");

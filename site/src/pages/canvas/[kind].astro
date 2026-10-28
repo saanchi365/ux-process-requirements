@@ -1,0 +1,101 @@
+---
+// The canvases: every requirement in its own column on one board you can drag and zoom.
+// Wireframes: screens top to bottom, versions side by side. Flowcharts: a requirement's flowcharts top to bottom.
+// Clicking a wireframe or flowchart opens it on its requirement's page, where its comments are.
+import Layout from "../../layouts/Layout.astro";
+import { load, esc, screens } from "../../lib/data.js";
+import { ICON, code, reqHref, fileHref } from "../../lib/ui.js";
+
+export function getStaticPaths() {
+  return [{ params: { kind: "wireframes" } }, { params: { kind: "flowcharts" } }];
+}
+const isWf = Astro.params.kind === "wireframes";
+const { reqs, all } = await load();
+const owner = Object.fromEntries(all.map(x => [x.code, x]));
+const nCmt = (key, req) => owner[req].comments.filter(c => c.on?.key === key).length;
+const badge = n => n ? `<span class="cbadge" title="${n} comment${n > 1 ? "s" : ""}">${ICON.cmt}${n}</span>` : "";
+
+// one wireframe: its picture, name and code; it opens on its requirement's page
+const card = w => `<a class="wf" href="${reqHref(w.req)}#w=${w.key}"><span class="pic">${w.image ? `<img src="${fileHref(w.image)}" alt="" draggable="false">` : ""}</span>
+  <span class="cap"><b>${esc(w.version ? `Version ${w.version}` : w.name)}</b><span class="row">${code(w.key)}${w.status === "final" ? '<span class="tag fin">Final</span>' : w.status === "cancel" ? '<span class="tag can">Not used</span>' : ""}
+  <span style="margin-left:auto">${badge(nCmt(w.key, w.req))}</span></span></span></a>`;
+const flow = x => screens(x.wireframes).map((s, i) => `${i ? '<div class="cvdown"></div>' : ""}<div class="cvscreen"><span class="wl">${esc(s.name)}${s.versions.length > 1 ? ` · ${s.versions.length} versions` : ""}</span>
+  <div class="vs">${s.versions.map(card).join("")}</div></div>`).join("");
+const head = (x, sub = false) => `<a class="cvhead ${sub ? "sub" : ""}" href="${reqHref(x.code)}"><span>${esc(x.name)}</span>${code(sub ? x.code.slice(5) : x.code)}</a>`;
+const none = '<div class="cvnone">No wireframes yet</div>';
+
+// one flowchart: drawn in place; its name opens it on its requirement's page
+const chart = f => `<section class="panel cvfc"><a class="row cvfchead" href="${reqHref(f.req)}#c=${f.key}"><b>${esc(f.name)}</b>${code(f.key)}<span style="margin-left:auto">${badge(nCmt(f.key, f.req))}</span></a>
+  ${f.chart ? `<pre class="mermaid">${esc(f.chart)}</pre>` : '<p class="meta" style="margin:0">This flowchart has no chart yet.</p>'}</section>`;
+
+const wfOf = r => [r, ...r.subs].some(x => x.wireframes.length);
+const cols = isWf
+  ? reqs.map(r => `<div class="cvcol" ${wfOf(r) ? "" : "data-nowf hidden"}>${head(r)}${r.wireframes.length ? flow(r) : r.subs.some(s => s.wireframes.length) ? "" : none}
+      ${r.subs.map(s => `<div class="cvsub" ${s.wireframes.length ? "" : "data-nowf hidden"}>${head(s, true)}${s.wireframes.length ? flow(s) : none}</div>`).join("")}</div>`)
+  : reqs.map(r => ({ r, fl: [r, ...r.subs].flatMap(x => x.flowcharts) })).filter(x => x.fl.length)
+      .map(({ r, fl }) => `<div class="cvcol">${head(r)}${fl.map(chart).join('<div class="cvdown"></div>')}</div>`);
+const count = isWf ? all.reduce((n, x) => n + x.wireframes.length, 0) : all.reduce((n, x) => n + x.flowcharts.length, 0);
+const hasChart = !isWf && all.some(x => x.flowcharts.some(f => f.chart));
+---
+<Layout title={isWf ? "Wireframes canvas" : "Flowcharts canvas"} view={isWf ? "wfcanvas" : "fccanvas"}>
+  <div class="cvwrap">
+    <p class="crumb"><a href={import.meta.env.BASE_URL}>Overview</a> › <span>{isWf ? "Wireframes" : "Flowcharts"} canvas</span></p>
+    <h1>{isWf ? "All wireframes" : "All flowcharts"}</h1>
+    <p class="brief">{isWf
+      ? "Every requirement in its own column: screens flow top to bottom, versions sit side by side. Drag to move, scroll or use the buttons to zoom. Click a wireframe to open it, read its comments and comment on it."
+      : "Every requirement in its own column, its flowcharts top to bottom. Drag to move, scroll or use the buttons to zoom. Click a flowchart's name to open it, read its comments and comment on it."}</p>
+    {count ? <Fragment>
+      <div class="toolbar"><div class="seg"><button data-zoom="-1" aria-label="Zoom out">−</button><button data-zoom="0" aria-label="Fit to screen">Fit</button><button data-zoom="1" aria-label="Zoom in">+</button></div>
+        <span class="meta" id="zoomPct">100%</span>
+        {isWf && <Fragment><span style="flex:1"></span><button class="chip" id="showEmpty" aria-pressed="false">Show requirements without wireframes</button></Fragment>}</div>
+      <div class="cvp" id="cvp"><div class="cvin" id="cvin"><div class="cvcols" set:html={cols.join("")}></div></div></div>
+    </Fragment> : <div class="empty"><b>{isWf ? "No wireframes yet" : "No flowcharts yet"}</b>{isWf ? "They'll appear here once they're drawn." : "They'll appear here once they're made."}</div>}
+  </div>
+
+  <script>
+    // drag to move, scroll or the buttons to zoom, Fit to see everything
+    const vp = document.getElementById("cvp"), el = document.getElementById("cvin");
+    if (vp && el) {
+      const C = { s: 1, x: 8, y: 8, drag: null as null | { x: number; y: number; ox: number; oy: number }, moved: false };
+      const place = () => { el.style.transform = `translate(${C.x}px,${C.y}px) scale(${C.s})`; document.getElementById("zoomPct")!.textContent = Math.round(C.s * 100) + "%"; };
+      const zoomAt = (f: number, cx: number, cy: number) => { const s = Math.min(2, Math.max(0.2, C.s * f)); C.x = cx - (cx - C.x) * s / C.s; C.y = cy - (cy - C.y) * s / C.s; C.s = s; place(); };
+      // Fit shows everything; the first view only fits the width, so the pictures stay big enough to read
+      const fit = (all = true) => { const b = vp.getBoundingClientRect(), w = el.scrollWidth || 1, h = el.scrollHeight || 1;
+        C.s = Math.min(1, Math.max(0.2, Math.min(b.width / w, all ? b.height / h : 1) * 0.96)); C.x = 8; C.y = 8; place(); };
+      const first = () => fit(false);
+      vp.addEventListener("pointerdown", e => { C.drag = { x: e.clientX, y: e.clientY, ox: C.x, oy: C.y }; C.moved = false; });
+      vp.addEventListener("pointermove", e => { if (!C.drag) return; const dx = e.clientX - C.drag.x, dy = e.clientY - C.drag.y;
+        if (Math.abs(dx) + Math.abs(dy) > 4) { C.moved = true; vp.classList.add("dragging"); } C.x = C.drag.ox + dx; C.y = C.drag.oy + dy; place(); });
+      const end = () => { C.drag = null; vp.classList.remove("dragging"); };
+      vp.addEventListener("pointerup", end); vp.addEventListener("pointerleave", end);
+      // the end of a drag isn't a click on the wireframe under the mouse
+      vp.addEventListener("click", e => { if (C.moved) { e.preventDefault(); e.stopPropagation(); C.moved = false; } }, true);
+      vp.addEventListener("wheel", e => { e.preventDefault(); const b = vp.getBoundingClientRect(); zoomAt(e.deltaY < 0 ? 1.1 : 1 / 1.1, e.clientX - b.left, e.clientY - b.top); }, { passive: false });
+      document.querySelectorAll<HTMLElement>("[data-zoom]").forEach(b => b.addEventListener("click", () => {
+        const z = +b.dataset.zoom!, r = vp.getBoundingClientRect();
+        z ? zoomAt(z > 0 ? 1.2 : 1 / 1.2, r.width / 2, r.height / 2) : fit();
+      }));
+      const empty = document.getElementById("showEmpty");
+      empty?.addEventListener("click", () => {
+        const on = empty.getAttribute("aria-pressed") !== "true";
+        empty.setAttribute("aria-pressed", String(on));
+        document.querySelectorAll<HTMLElement>("[data-nowf]").forEach(c => (c.hidden = !on));
+        first();
+      });
+      // fit once the pictures and charts have their size
+      addEventListener("load", first); addEventListener("cvready", first); first();
+    }
+  </script>
+  {hasChart && <script type="module" is:inline>
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";
+    const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+    mermaid.initialize({ startOnLoad: false, theme: dark ? "dark" : "neutral", fontFamily: "Inter, system-ui, sans-serif", themeVariables: { fontSize: "14px" } });
+    // charts are drawn at full size, then the canvas fits itself around them
+    const el = document.getElementById("cvin");
+    el.classList.add("measuring");  // full size while drawing, even if the canvas moves meanwhile
+    await document.fonts.ready;  // boxes are sized to their words, so the font must be there first
+    await mermaid.run({ querySelector: "pre.mermaid" });
+    el.classList.remove("measuring");
+    dispatchEvent(new Event("cvready"));
+  </script>}
+</Layout>

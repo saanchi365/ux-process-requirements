@@ -41,6 +41,8 @@ const byFeature = features.map(f => { const rs = reqs.filter(r => r.features.inc
   <nav class="side" id="side" aria-label="Handbook">
     <a class={`users ${view === "users" ? "on" : ""}`} href={`${base}users/`}><Fragment set:html={ICON.users} />About users<span>3 pages</span></a>
     <a class={`sl ${view === "overview" ? "on" : ""}`} href={base} style="margin-top:10px"><Fragment set:html={ICON.home} />Overview</a>
+    <a class={`sl ${view === "wfcanvas" ? "on" : ""}`} href={`${base}canvas/wireframes/`}><Fragment set:html={ICON.frame} />Wireframes canvas</a>
+    <a class={`sl ${view === "fccanvas" ? "on" : ""}`} href={`${base}canvas/flowcharts/`}><Fragment set:html={ICON.flow} />Flowcharts canvas</a>
     <div class="sdiv"></div>
     <a class={`sl ${view === "all" ? "on" : ""}`} href={`${base}requirements/`} style="margin-top:10px;font-weight:600"><Fragment set:html={ICON.list} />Requirements<span class="cc">{reqs.length} · see all</span></a>
     <div class="vseg" role="group" aria-label="Show requirements as a list or by feature">

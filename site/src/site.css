@@ -72,3 +72,13 @@ tr.click:hover td.name a { text-decoration: underline; text-underline-offset: 3p
 .chsteps li { display: grid; gap: var(--s-2); justify-items: start }
 .chline { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap }
 .chline code { font-size: var(--fs-md); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 5px 10px; user-select: all }
+
+/* the canvases: requirement names and flowchart names are links that look like headings */
+a.cvhead, a.cvfchead { color: inherit; text-decoration: none }
+a.cvhead:hover span:first-child, a.cvfchead:hover b { color: var(--accent) }
+.cvfchead { gap: var(--s-2); margin-bottom: var(--s-3) }
+.cvfc .mermaid { margin: 0; background: none; padding: 0 }
+.cvfc .mermaid svg { max-width: 100%; height: auto }
+.cvin img { pointer-events: none }
+.cvcard { color: inherit; text-decoration: none }
+.cvin.measuring { transform: none !important }
